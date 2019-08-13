@@ -1,0 +1,8 @@
+- Add routes for cards.
+- Write frontend code.
+- Add database code.
+
+- const member functions.
+- Logger.
+- Tests.
+
