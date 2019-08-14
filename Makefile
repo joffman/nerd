@@ -26,3 +26,8 @@ $(BUILDDIR)/nerd: $(OBJ)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(INC)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+.PHONY: clean
+
+clean:
+	rm -f $(BUILDDIR)/*.o
