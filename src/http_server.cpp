@@ -163,7 +163,7 @@ void HttpServer::do_session(tcp::socket& socket)
 
 template<class Body, class Allocator, class Send>
 void HttpServer::handle_request(
-    http::request<Body, http::basic_fields<Allocator>>&& req,
+    http::request<Body, http::basic_fields<Allocator>> req,
     Send&& send)
 {
     // Returns a bad request response

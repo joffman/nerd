@@ -102,7 +102,8 @@ private:
     // caller to pass a generic lambda for receiving the response.
     template<class Body, class Allocator, class Send>
     void handle_request(
-        http::request<Body, http::basic_fields<Allocator>>&& req,
+        //http::request<Body, http::basic_fields<Allocator>>&& req, // because of gdb bug
+        http::request<Body, http::basic_fields<Allocator>> req,
         Send&& send);
 
 private:
