@@ -1,19 +1,26 @@
 # Directories
-INCDIR = ../include
+EXTINCDIR = ../include
+	# include files of external libs
 OBJDIR = ../obj
 SRCDIR = .
+INCDIR = $(SRCDIR)
+	# we store our own (internal)
+	# headers in the source folder
 
 # Object files.
-_OBJ = nerd.o
+_OBJ = http_server.o nerd.o sqlite_database.o
 OBJ = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
 
+
 # Include files.
-_INC = json.hpp
+_EXTINC = json.hpp
+EXTINC = $(patsubst %,$(EXTINCDIR)/%,$(_EXTINC))
+_INC = http_server.h names.h sqlite_database.h
 INC = $(patsubst %,$(INCDIR)/%,$(_INC))
 
 # Compile options
 CC = g++
-CFLAGS = -Wall -std=c++11 -g -O0 -DSQLITE_DEBUG -I$(INCDIR)
+CFLAGS = -Wall -std=c++11 -g -O0 -DSQLITE_DEBUG -I$(EXTINCDIR)
 
 # Link options.
 LDFLAGS = -lboost_system -lsqlite3 -pthread
@@ -24,10 +31,12 @@ LDFLAGS = -lboost_system -lsqlite3 -pthread
 ../nerd: $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(INC)
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(EXTINC) $(INC)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 
 clean:
 	rm -f $(OBJDIR)/*.o
+
+print-%: ; @echo $* = $($*)
