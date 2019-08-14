@@ -547,7 +547,7 @@ int main(int argc, char* argv[])
     try {
         // Check command line arguments.
         if (argc == 2 && std::string(argv[1]) == "create_database") {
-            SQLiteDatabase db{"build/nerdbase.db"};
+            SQLiteDatabase db{"nerdbase.db"};
             if (!db.init())
                 throw std::runtime_error("initializing database failed");
             return 0;
@@ -555,7 +555,7 @@ int main(int argc, char* argv[])
             auto const address = net::ip::make_address(argv[1]);
             auto const port = static_cast<unsigned short>(std::atoi(argv[2]));
             auto const doc_root = std::string(argv[3]);
-            SQLiteDatabase db{"build/nerdbase.db"};
+            SQLiteDatabase db{"nerdbase.db"};
 
             HttpServer server(std::move(db), address, port, std::move(doc_root));
             server.run();

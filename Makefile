@@ -1,11 +1,11 @@
 # Directories
 INCDIR = include
-BUILDDIR = build
+OBJDIR = obj
 SRCDIR = src
 
 # Object files.
 _OBJ = nerd.o
-OBJ = $(patsubst %,$(BUILDDIR)/%,$(_OBJ))
+OBJ = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
 
 # Include files.
 _INC = json.hpp
@@ -21,13 +21,13 @@ LDFLAGS = -lboost_system -lsqlite3 -pthread
 
 # target: dependencies
 # 	actions
-$(BUILDDIR)/nerd: $(OBJ)
+nerd: $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(INC)
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(INC)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 
 clean:
-	rm -f $(BUILDDIR)/*.o
+	rm -f $(OBJDIR)/*.o
