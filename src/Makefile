@@ -1,7 +1,7 @@
 # Directories
-INCDIR = include
-OBJDIR = obj
-SRCDIR = src
+INCDIR = ../include
+OBJDIR = ../obj
+SRCDIR = .
 
 # Object files.
 _OBJ = nerd.o
@@ -21,7 +21,7 @@ LDFLAGS = -lboost_system -lsqlite3 -pthread
 
 # target: dependencies
 # 	actions
-nerd: $(OBJ)
+../nerd: $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(INC)

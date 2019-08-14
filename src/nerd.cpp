@@ -64,6 +64,16 @@ public:
         sqlite3_finalize(m_stmt);
     }
 
+    int step()
+    {
+        return sqlite3_step(m_stmt);
+    }
+
+
+    //////////////////////////////
+    // bind functions
+    //////////////////////////////
+
     void bind_null(int pos)
     {
         if (sqlite3_bind_null(m_stmt, pos) != SQLITE_OK)
@@ -84,9 +94,18 @@ public:
             throw std::runtime_error(std::string("bind_text failed: ") + sqlite3_errmsg(m_db));
     }
 
-    int step()
+    //////////////////////////////
+    // column functions
+    //////////////////////////////
+
+    int column_int(int pos)
     {
-        return sqlite3_step(m_stmt);
+        return sqlite3_column_int(m_stmt, pos);
+    }
+
+    std::string column_text(int pos)
+    {
+        return std::string(reinterpret_cast<const char*>(sqlite3_column_text(m_stmt, pos)));
     }
 
 private:
@@ -143,7 +162,7 @@ public:
             m_db,
             R"RAW(INSERT INTO card
                 (title, question, answer)
-                VALUES ($1, $2, $3)
+                VALUES ($1, $2, $3);
             )RAW");
 
         stmt.bind_text(1, data["title"]);
@@ -160,46 +179,30 @@ public:
         return sqlite3_last_insert_rowid(m_db);
     }
 
+    // Get all cards from database.
+    // TODO Allow filters.
     json get_cards() const
     {
-//        enum query_columns { USERNAME = 0, FULL_NAME = 1, IS_ADMIN = 2 };
-//
-//        SQLiteStatement st = GET_STATEMENT(m_db, sql::list_users);
-//
-//        if (filter.find("username") != filter.end())
-//            st->bind_string(1, "%" + filter.at("username") + "%");
-//        else
-//            st->bind_string(1, "%");
-//
-//        if (filter.find("full_name") != filter.end())
-//            st->bind_string(2, "%" + filter.at("full_name") + "%");
-//        else
-//            st->bind_string(2, "%");
-//
-//        if (filter.find("is_admin") != filter.end())
-//            st->bind_string(3, filter.at("is_admin"));
-//        else
-//            st->bind_string(3, "%");
-//
-//        st->execute();
-//        while (st->fetch_row()) {
-//            UserInfo user;
-//            user.username = st->column_string(USERNAME);
-//            user.full_name = st->column_string(FULL_NAME);
-//            user.is_admin = st->column_integer(IS_ADMIN);
-//            users.push_back(std::move(user));
-//        }
+        // Create SQL-statement.
+        SQLiteStatement stmt(
+            m_db,
+            R"RAW(SELECT id, title from card;)RAW");
 
+        // Fetch results.
+        json result = json::array();
+        int rc;
+        while ((rc = stmt.step()) == SQLITE_ROW) {
+            json c;
+            c["id"] = stmt.column_int(0);
+            c["title"] = stmt.column_text(1);
+            result.push_back(c);
+        }
 
-        json cards = json::array();
-//        for (const UserInfo& user : result.cards) {
-//            json user_object = json::object();
-//            user_object["username"] = user.username;
-//            user_object["full_name"] = user.full_name;
-//            user_object["is_admin"] = user.is_admin;
-//            cards.push_back(std::move(user_object));
-//        }
-        return cards;
+        // Check for errors.
+        if (rc != SQLITE_DONE)
+            throw std::runtime_error(std::string("can't create user: ") + sqlite3_errmsg(m_db));
+
+        return result;
     }
 private:
     sqlite3* m_db;
@@ -239,6 +242,24 @@ private:
     //////////////////////////////
     // Static functions.
     //////////////////////////////
+
+    template<class Body, class Allocator>
+    http::response<http::string_body> build_json_response(
+        const http::request<Body, http::basic_fields<Allocator>>& req,
+        const json& response_json)
+    {
+        std::string body = response_json.dump();
+        http::response<http::string_body> res(
+            http::status::ok,
+            req.version(),
+            body);
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(http::field::content_type, "application/json");
+        res.content_length(body.size());
+        res.keep_alive(req.keep_alive());
+        return std::move(res);
+    }
+
 
     // Return a reasonable mime type based on the extension of a file.
     static beast::string_view mime_type(beast::string_view path)
@@ -445,31 +466,13 @@ private:
             if (req.method() == http::verb::post) {
                 json card_json = json::parse(req.body());       // TODO error checking
                 int id = m_db.create_card(card_json);
-                json body_json = {{"id", id}};
-                std::string body = body_json.dump();
-                http::response<http::string_body> res(
-                    http::status::ok,
-                    req.version(),
-                    body);
-                //( std::piecewise_construct,
-                //        std::make_tuple(std::move(body)),
-                //        std::make_tuple(http::status::ok, req.version()));
-                res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-                res.set(http::field::content_type, "application/json");
-                res.content_length(body.size());
-                res.keep_alive(req.keep_alive());
+                json id_json = {{"id", id}};
+                auto res = build_json_response(req, id_json);
                 return send(std::move(res));
             } else if (req.method() == http::verb::get) {
-             //   json::array json_cards = m_db.get_cards();
-             //   http::response<http::file_body> res{
-             //       std::piecewise_construct,
-             //           std::make_tuple(std::move(body)),
-             //           std::make_tuple(http::status::ok, req.version())};
-             //   res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-             //   res.set(http::field::content_type, mime_type(path));
-             //   res.content_length(size);
-             //   res.keep_alive(req.keep_alive());
-             //   return send(std::move(res));
+                json cards_json = {{"cards", m_db.get_cards()}};
+                auto res = build_json_response(req, cards_json);
+                return send(std::move(res));
             } else {
                 return send(bad_request("Invalid HTTP-method"));
             }

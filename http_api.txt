@@ -29,3 +29,13 @@ Response (example):
 ##############################
 ## Get all cards.
 ##############################
+
+Request line: GET .../cards
+
+Response (example):
+{
+	cards: [
+		{ "id": 1, "title": "First card" },
+		{ "id": 2, "title": "Second card" }
+	]
+}
