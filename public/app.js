@@ -17,7 +17,7 @@ var main = function() {
 				<form id="card-form" class="card-form-grid">
 					<div>Title:</div><input type="text" name="title"/>
 					<div>Question:</div><textarea name="question"/>
-					<div>Answer:</div><textarea name="anwer"/>
+					<div>Answer:</div><textarea name="answer"/>
 
 					<div class="button-bar"><button class="submit">Save</button><!--More buttons here--></div>
 				</form>
