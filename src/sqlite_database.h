@@ -1,7 +1,8 @@
 #ifndef NERD_SQLITE_DATABASE_H
 #define NERD_SQLITE_DATABASE_H
 
-#include <string>
+#include <exception>
+#include <string>   // string, to_string
 
 #include <json.hpp>
 #include <sqlite3.h>
@@ -9,6 +10,9 @@
 #include "names.h"
 
 namespace nerd {
+
+class SQLiteColumnNull : public std::exception {
+};
 
 class SQLiteStatement {
 public:
@@ -24,7 +28,7 @@ public:
     //////////////////////////////
 
     void bind_null(int pos);
-
+    void bind_int(int pos, int val);
     void bind_text(int pos, const std::string& text);
     
 
@@ -56,10 +60,13 @@ public:
     // Throws if object can't be created.
     int create_card(const json& data);
 
-    // Get all cards from database.
+    // Return all cards from database.
     // TODO Allow filters.
     json get_cards() const;
     
+    // Return all details from card with given id.
+    json get_card(int id) const;
+
 private:
     sqlite3* m_db;
 };

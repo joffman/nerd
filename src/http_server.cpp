@@ -1,5 +1,6 @@
 #include <iostream>
-#include <string>
+#include <regex>
+#include <string>   // string, stoi
 #include <thread>
 
 #include <boost/beast/core.hpp>
@@ -11,6 +12,19 @@
 
 #include "http_server.h"
 #include "names.h"
+
+namespace {
+
+// Wrapper for std::regex_match for string_views.
+bool sv_regex_match(
+    const beast::string_view& sv,
+    std::match_results<beast::string_view::const_iterator>& matches,
+    const std::regex& r)
+{
+    return std::regex_match(sv.begin(), sv.end(), matches, r);
+}
+
+}
 
 namespace nerd {
 
@@ -206,7 +220,20 @@ void HttpServer::handle_request(
     ////
     // Handle API calls.
     ////
-    if (req.target().compare("/api/v1/cards") == 0) {
+    const std::regex cards_regex(R"(/api/v1/cards/(\d+))");
+    std::match_results<beast::string_view::const_iterator> matches;
+    if (sv_regex_match(req.target(), matches, cards_regex)) {
+        int card_id = std::stoi(matches[1]);
+        if (req.method() == http::verb::get) {
+            json card_json = m_db.get_card(card_id);
+            auto res = build_json_response(req, card_json);
+            return send(std::move(res));
+        } else if (req.method() == http::verb::post) {
+            // ...
+        } else {
+            return send(bad_request("Invalid HTTP-method"));
+        }
+    } else if (req.target().compare("/api/v1/cards") == 0) {
         if (req.method() == http::verb::post) {
             json card_json = json::parse(req.body());       // TODO error checking
             int id = m_db.create_card(card_json);

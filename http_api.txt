@@ -12,7 +12,7 @@ API v1: /api/v1/...
 
 Request line: POST .../cards
 
-Body (example):
+Request body (example):
 {
 	"title": "Test-Question",
 	"question": "What is sizeof(char)?",
@@ -34,8 +34,22 @@ Request line: GET .../cards
 
 Response (example):
 {
-	cards: [
+	"cards": [
 		{ "id": 1, "title": "First card" },
 		{ "id": 2, "title": "Second card" }
 	]
+}
+
+
+##############################
+## Get details of single card.
+##############################
+
+Request line: GET .../cards/<id>
+
+Response (example):
+{
+	"title": "Test-Question",
+	"question": "What is sizeof(char)?",
+	"answer": "1 (by definition)"
 }

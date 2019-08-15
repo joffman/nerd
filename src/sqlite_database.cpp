@@ -48,6 +48,13 @@ void SQLiteStatement::bind_null(int pos)
         throw std::runtime_error(std::string("bind_null failed: ") + sqlite3_errmsg(m_db));
 }
 
+void SQLiteStatement::bind_int(int pos, int val)
+{
+    int rc = sqlite3_bind_int(m_stmt, pos, val);
+    if (rc != SQLITE_OK)
+        throw std::runtime_error(std::string("bind_int failed: ") + sqlite3_errmsg(m_db));
+}
+
 void SQLiteStatement::bind_text(int pos, const std::string& text)
 {
     if (text.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
@@ -73,7 +80,11 @@ int SQLiteStatement::column_int(int pos)
 
 std::string SQLiteStatement::column_text(int pos)
 {
-    return std::string(reinterpret_cast<const char*>(sqlite3_column_text(m_stmt, pos)));
+    const unsigned char* ptr = sqlite3_column_text(m_stmt, pos);
+    if (ptr)
+        return std::string(reinterpret_cast<const char*>(ptr));
+    else
+        throw SQLiteColumnNull();
 }
 
 
@@ -129,7 +140,7 @@ int SQLiteDatabase::create_card(const json& data)
                 VALUES ($1, $2, $3);
             )RAW");
 
-        stmt.bind_text(1, data["title"]);
+    stmt.bind_text(1, data["title"]);
     stmt.bind_text(2, data["question"]);
     if (data.find("answer") != data.end())
         stmt.bind_text(3, data["answer"]);
@@ -162,7 +173,44 @@ json SQLiteDatabase::get_cards() const
 
     // Check for errors.
     if (rc != SQLITE_DONE)
-        throw std::runtime_error(std::string("can't create user: ") + sqlite3_errmsg(m_db));
+        throw std::runtime_error(std::string("fetching cards from database failed: ")
+                                 + sqlite3_errmsg(m_db));
+
+    return result;
+}
+
+json SQLiteDatabase::get_card(int id) const {
+    // Create SQL-statement.
+    SQLiteStatement stmt(
+        m_db,
+        R"RAW(SELECT title, question, answer
+                from card
+                WHERE id = $1;)RAW");
+    stmt.bind_int(1, id);
+
+    // Fetch result.
+    {
+        int rc;
+        if ((rc = stmt.step()) != SQLITE_ROW) {
+            throw std::runtime_error(
+                std::string("error when fetching card with id ") + std::to_string(id));
+        }
+    }
+
+    // Create json.
+    json result;
+    result["title"] = stmt.column_text(0);
+    result["question"] = stmt.column_text(1);
+    try {
+        result["answer"] = stmt.column_text(2);
+    } catch (const SQLiteColumnNull&) {
+        // answer is NULL
+    }
+
+    // Check for errors.
+    int rc = stmt.step();
+    if (rc != SQLITE_DONE)
+        throw std::logic_error(std::string("internal error when fetching card"));
 
     return result;
 }
