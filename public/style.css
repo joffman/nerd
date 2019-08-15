@@ -1,3 +1,24 @@
-#card-form input, #card-form textarea {
-	width: 100%;
+#contents {
+	margin: 10px;
+}
+
+.card-form-grid {
+	display: grid;
+	grid-gap: 10px;
+	grid-template-columns: 80px auto;
+}
+
+.card-form-grid .button-bar {
+	grid-column: 2/2;
+}
+
+.card-form-grid .button-bar button {
+	float: right;
+}
+
+#card-form textarea {
+	height: 200px;
+	min-width: 100px;
+	max-height: 400px;
+	resize: vertical;
 }

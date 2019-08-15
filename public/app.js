@@ -12,23 +12,21 @@ var main = function() {
 
 	// Install click-handler for "new card" button.
 	$("#new_card").on("click", function() {
-		$("body").html(`
+		$("#contents").html(`
 				<h1>Card Form</h1>
-				<form id="card-form">
-					Title: <input type="text" name="title"/>
-					Question:<br/>
-					<textarea name="question"/>
-					Answer:<br/>
-					<textarea name="anwer"/>
+				<form id="card-form" class="card-form-grid">
+					<div>Title:</div><input type="text" name="title"/>
+					<div>Question:</div><textarea name="question"/>
+					<div>Answer:</div><textarea name="anwer"/>
 
-					<input type="submit" value="Submit"/>
+					<div class="button-bar"><button class="submit">Save</button><!--More buttons here--></div>
 				</form>
 				`);
-		$("#card-form").on("submit", function(evt) {
+		$("#card-form button.submit").on("click", function(evt) {
 			console.log("submit button pressed");
 
 			// Get data from object.
-			var form = $(this)[0];		// why is [0] necessary???
+			var form = $("#card-form")[0];		// why is [0] necessary???
 			var data = {};
 			for (var i = 0; i < form.length; ++i) {
 				var input = form[i];
