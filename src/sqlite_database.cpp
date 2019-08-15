@@ -183,7 +183,7 @@ json SQLiteDatabase::get_card(int id) const {
     // Create SQL-statement.
     SQLiteStatement stmt(
         m_db,
-        R"RAW(SELECT title, question, answer
+        R"RAW(SELECT id, title, question, answer
                 from card
                 WHERE id = $1;)RAW");
     stmt.bind_int(1, id);
@@ -199,10 +199,11 @@ json SQLiteDatabase::get_card(int id) const {
 
     // Create json.
     json result;
-    result["title"] = stmt.column_text(0);
-    result["question"] = stmt.column_text(1);
+    result["id"] = stmt.column_int(0);
+    result["title"] = stmt.column_text(1);
+    result["question"] = stmt.column_text(2);
     try {
-        result["answer"] = stmt.column_text(2);
+        result["answer"] = stmt.column_text(3);
     } catch (const SQLiteColumnNull&) {
         // answer is NULL
     }

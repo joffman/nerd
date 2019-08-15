@@ -1,8 +1,6 @@
-- Add routes for cards.
-- Write frontend code.
-- Add database code.
+- Error handling: Don't crash on invalid input.
 
 - const member functions.
-- Logger.
+- Logging.
 - Tests.
 

@@ -5,47 +5,21 @@ var main = function() {
 	$.get("/api/v1/cards", function(data) {
 		console.log("Got data...");
 		data["cards"].forEach(function(card) {
-			$("#cards_table")
-				.append("<tr><td>" + card.id + "</td><td>" + card.title + "</td></tr>");
+			$("#cards-table")
+				.append('<tr><td class="id-td">' + card.id + "</td><td>" + card.title + "</td></tr>");
+		});
+		$("#cards-table tr").on("click", function() {
+			var id = $(this).find("td.id-td")[0].innerText;
+			$.get("/api/v1/cards/" + id, function(data) {
+				card_form.set_data(data);
+				$("#contents").html(card_form.html());
+			});
 		});
 	});
 
 	// Install click-handler for "new card" button.
-	$("#new_card").on("click", function() {
-		$("#contents").html(`
-				<h1>Card Form</h1>
-				<form id="card-form" class="card-form-grid">
-					<div>Title:</div><input type="text" name="title"/>
-					<div>Question:</div><textarea name="question"/>
-					<div>Answer:</div><textarea name="answer"/>
-
-					<div class="button-bar"><button class="submit">Save</button><!--More buttons here--></div>
-				</form>
-				`);
-		$("#card-form button.submit").on("click", function(evt) {
-			console.log("submit button pressed");
-
-			// Get data from object.
-			var form = $("#card-form")[0];		// why is [0] necessary???
-			var data = {};
-			for (var i = 0; i < form.length; ++i) {
-				var input = form[i];
-				if (input.name)
-					data[input.name] = input.value;
-			}
-			console.log("data: ", data);
-
-			// Send POST request to create card.
-			$.post("/api/v1/cards", JSON.stringify(data), function(resp_data, status, xhr) {
-				console.log("resp_data: ", resp_data);
-				console.log("status: ", status);
-				console.log("xhr: ", xhr);
-				window.location.href = "index.html";
-			});
-
-			// Prevent default event handling.
-			return false;
-		});
+	$("#new-card").on("click", function() {
+		$("#contents").html(card_form.html());
 	});
 };
 
