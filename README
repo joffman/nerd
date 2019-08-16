@@ -1,0 +1,17 @@
+This is a simple web application for managing your flash cards.
+
+Prerequisites:
+- sqlite3 (apt install libsqlite3-dev)
+- boost/beast
+
+Building:
+$ mkdir obj
+$ cd src && make
+
+First run (create database):
+$ ./nerd create_database
+
+Run web server (with existing database):
+$ ./nerd <bind-ip> <bind-port> <doc-root>
+e.g.:
+$ ./nerd 0.0.0.0 8080 public
