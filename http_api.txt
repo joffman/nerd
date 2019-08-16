@@ -53,3 +53,35 @@ Response (example):
 	"question": "What is sizeof(char)?",
 	"answer": "1 (by definition)"
 }
+
+
+##############################
+## Update a card.
+##############################
+
+Request line: PUT .../cards/<id>
+
+Request body (example):
+{
+	"title": "Changed title",
+	"question": "Changed question?",
+	"answer": "Changed answer!"
+}
+"answer" is not required.
+
+Response (example):
+{
+	"success": true
+}
+
+
+##############################
+## Delete a card.
+##############################
+
+Request line: DELETE .../cards/<id>
+
+Response (example):
+{
+	"success": false
+}
