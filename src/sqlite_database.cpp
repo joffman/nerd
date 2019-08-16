@@ -153,10 +153,16 @@ void SQLiteDatabase::init()
     }
 }
 
+
+//////////////////////////////
+// card CRUD
+//////////////////////////////
+
 int SQLiteDatabase::create_card(const json& data)
 {
     // Check pre-condition. TODO Check for correct type.
-    if (data.find("title") == data.end() || data.find("question") == data.end())
+    if (data.find("title") == data.end() || data["title"] == ""
+        || data.find("question") == data.end() || data["question"] == "")
         throw std::runtime_error("create_card: title or question missing");
 
     // Create SQL-statement.
@@ -252,8 +258,8 @@ json SQLiteDatabase::get_card(int id) const
 void SQLiteDatabase::update_card(int id, const json& data)
 {
     // Check pre-condition. TODO Check for correct type.
-    if (data.find("title") == data.end()
-        || data.find("question") == data.end())
+    if (data.find("title") == data.end() || data["title"] == ""
+        || data.find("question") == data.end() || data["question"] == "")
         throw std::runtime_error("create_card: title or question missing");
 
     // Create SQL-statement.
@@ -293,6 +299,90 @@ void SQLiteDatabase::delete_card(int id)
     // Execute statement.
     if (stmt.step() != SQLITE_DONE)
         throw std::runtime_error(std::string("cannot delete card: ") + sqlite3_errmsg(m_db));
+}
+
+
+//////////////////////////////
+// topic CRUD
+//////////////////////////////
+
+int SQLiteDatabase::create_topic(const json& data)
+{
+    // Check pre-condition. TODO Check for correct type.
+    if (data.find("name") == data.end() || data["name"] == "")
+        throw std::runtime_error("create_topic: name missing");
+
+    // Create SQL-statement.
+    SQLiteStatement stmt(
+        m_db,
+        R"RAW(INSERT INTO topic (name) VALUES ($1);)RAW");
+
+    stmt.bind_text(1, data["name"]);
+
+    // Execute statement and return last-insert id.
+    if (stmt.step() != SQLITE_DONE)
+        throw std::runtime_error(std::string("cannot create topic: ") + sqlite3_errmsg(m_db));
+
+    return sqlite3_last_insert_rowid(m_db);
+}
+
+json SQLiteDatabase::get_topics() const
+{
+    // Create SQL-statement.
+    SQLiteStatement stmt(
+        m_db,
+        R"RAW(SELECT id, name from topic;)RAW");
+
+    // Fetch results.
+    json result = json::array();
+    int rc;
+    while ((rc = stmt.step()) == SQLITE_ROW) {
+        json c;
+        c["id"] = stmt.column_int(0);
+        c["name"] = stmt.column_text(1);
+        result.push_back(c);
+    }
+
+    // Check for errors.
+    if (rc != SQLITE_DONE)
+        throw std::runtime_error(std::string("fetching topics from database failed: ")
+                                 + sqlite3_errmsg(m_db));
+
+    return result;
+}
+
+void SQLiteDatabase::update_topic(int id, const json& data)
+{
+    // Check pre-condition. TODO Check for correct type.
+    if (data.find("name") == data.end() || data["name"] == "")
+        throw std::runtime_error("update_topic: name missing");
+
+    // Create SQL-statement.
+    SQLiteStatement stmt(
+        m_db,
+        R"RAW(UPDATE topic SET name = $1 WHERE id = $2;)RAW");
+
+    stmt.bind_text(1, data["name"]);
+    stmt.bind_int(2, id);
+
+    // Execute statement.
+    if (stmt.step() != SQLITE_DONE)
+        throw std::runtime_error(std::string("cannot update topic: ") + sqlite3_errmsg(m_db));
+
+}
+
+void SQLiteDatabase::delete_topic(int id)
+{
+    // Create SQL-statement.
+    SQLiteStatement stmt(
+        m_db,
+        R"RAW(DELETE FROM topic WHERE id = $1;)RAW");
+
+    stmt.bind_int(1, id);
+
+    // Execute statement.
+    if (stmt.step() != SQLITE_DONE)
+        throw std::runtime_error(std::string("cannot delete topic: ") + sqlite3_errmsg(m_db));
 }
 
 }   // nerd

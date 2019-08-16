@@ -2,7 +2,7 @@ var card_list = function() {
 	var $html_elem = $(`
 			<div>
 				<h1>All Cards</h1>
-				<table id="cards-table">
+				<table id="cards-table" class="object-table">
 					<tr><th>ID</th><th>Title</th><th>Delete</th></tr>
 				</table>
 				<button id="new-card">New card</button>

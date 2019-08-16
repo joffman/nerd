@@ -1,9 +1,9 @@
 var main = function() {
 	console.log("Starting main...");
 
-	// Insert card_list into DOM and load it with cards from backend.
-	$("#contents").html(card_list.html());
-	card_list.load_cards();
+	// Insert topic-list into DOM and load it with topics from backend.
+	$("#contents").html(topics.html());
+	topics.load_topics();
 };
 
 $(document).ready(main);

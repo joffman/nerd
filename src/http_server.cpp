@@ -220,55 +220,105 @@ void HttpServer::handle_request(
     ////
     // Handle API calls.
     ////
-    const std::regex cards_regex(R"(/api/v1/cards/(\d+))");
-    std::match_results<beast::string_view::const_iterator> matches;
-    // TODO Check Content-type field.
-    if (sv_regex_match(req.target(), matches, cards_regex)) {
-        int card_id = std::stoi(matches[1]);
-        if (req.method() == http::verb::get) {          // get card
-            json card_json = m_db.get_card(card_id);
-            auto resp = build_json_response(req, card_json);
-            return send(std::move(resp));
-        } else if (req.method() == http::verb::put) {   // update card
-            json resp_json;
-            try {
-                json req_json = json::parse(req.body());
-                m_db.update_card(card_id, req_json);
-                resp_json["success"] = true;
-            } catch (const std::exception& e) {
-                resp_json["success"] = false;
-                resp_json["error_msg"] = e.what();
+    {   // Card API.
+        const std::regex regex(R"(/api/v1/cards/(\d+))");
+        std::match_results<beast::string_view::const_iterator> matches;
+        // TODO Check Content-type field.
+        if (sv_regex_match(req.target(), matches, regex)) {
+            int card_id = std::stoi(matches[1]);
+            if (req.method() == http::verb::get) {          // get card
+                json card_json = m_db.get_card(card_id);
+                auto resp = build_json_response(req, card_json);
+                return send(std::move(resp));
+            } else if (req.method() == http::verb::put) {   // update card
+                json resp_json;
+                try {
+                    json req_json = json::parse(req.body());
+                    m_db.update_card(card_id, req_json);
+                    resp_json["success"] = true;
+                } catch (const std::exception& e) {
+                    resp_json["success"] = false;
+                    resp_json["error_msg"] = e.what();
+                }
+                auto resp = build_json_response(req, resp_json);
+                return send(std::move(resp));
+            } else if (req.method() == http::verb::delete_) {   // delete card
+                json resp_json;
+                try {
+                    m_db.delete_card(card_id);
+                    resp_json["success"] = true;
+                } catch (const std::exception& e) {
+                    resp_json["success"] = false;
+                    resp_json["error_msg"] = e.what();
+                }
+                auto resp = build_json_response(req, resp_json);
+                return send(std::move(resp));   // TODO Create api_success and api_error functions
+            } else {
+                return send(bad_request("Invalid HTTP-method"));    // TODO send {error_msg: "..."}
             }
-            auto resp = build_json_response(req, resp_json);
-            return send(std::move(resp));
-        } else if (req.method() == http::verb::delete_) {   // delete card
-            json resp_json;
-            try {
-                m_db.delete_card(card_id);
-                resp_json["success"] = true;
-            } catch (const std::exception& e) {
-                resp_json["success"] = false;
-                resp_json["error_msg"] = e.what();
+        } else if (req.target().compare("/api/v1/cards") == 0) {
+            if (req.method() == http::verb::post) {
+                json card_json = json::parse(req.body());       // TODO error checking
+                int id = m_db.create_card(card_json);
+                json id_json = {{"id", id}};
+                auto resp = build_json_response(req, id_json);
+                return send(std::move(resp));
+            } else if (req.method() == http::verb::get) {
+                json cards_json = {{"cards", m_db.get_cards()}};
+                auto resp = build_json_response(req, cards_json);
+                return send(std::move(resp));
+            } else {
+                return send(bad_request("Invalid HTTP-method"));
             }
-            auto resp = build_json_response(req, resp_json);
-            return send(std::move(resp));   // TODO Create api_success and api_error functions
-        } else {
-            return send(bad_request("Invalid HTTP-method"));    // TODO send {error_msg: "..."}
-        }
-    } else if (req.target().compare("/api/v1/cards") == 0) {
-        if (req.method() == http::verb::post) {
-            json card_json = json::parse(req.body());       // TODO error checking
-            int id = m_db.create_card(card_json);
-            json id_json = {{"id", id}};
-            auto resp = build_json_response(req, id_json);
-            return send(std::move(resp));
-        } else if (req.method() == http::verb::get) {
-            json cards_json = {{"cards", m_db.get_cards()}};
-            auto resp = build_json_response(req, cards_json);
-            return send(std::move(resp));
-        } else {
-            return send(bad_request("Invalid HTTP-method"));
-        }
+        } 
+    }
+    {   // Topic API.
+        const std::regex regex(R"(/api/v1/topics/(\d+))");
+        std::match_results<beast::string_view::const_iterator> matches;
+        // TODO Check Content-type field.
+        if (sv_regex_match(req.target(), matches, regex)) {
+            int topic_id = std::stoi(matches[1]);
+            if (req.method() == http::verb::put) {   // update topic
+                json resp_json;
+                try {
+                    json req_json = json::parse(req.body());
+                    m_db.update_topic(topic_id, req_json);
+                    resp_json["success"] = true;
+                } catch (const std::exception& e) {
+                    resp_json["success"] = false;
+                    resp_json["error_msg"] = e.what();
+                }
+                auto resp = build_json_response(req, resp_json);
+                return send(std::move(resp));
+            } else if (req.method() == http::verb::delete_) {   // delete topic
+                json resp_json;
+                try {
+                    m_db.delete_topic(topic_id);
+                    resp_json["success"] = true;
+                } catch (const std::exception& e) {
+                    resp_json["success"] = false;
+                    resp_json["error_msg"] = e.what();
+                }
+                auto resp = build_json_response(req, resp_json);
+                return send(std::move(resp));   // TODO Create api_success and api_error functions
+            } else {
+                return send(bad_request("Invalid HTTP-method"));    // TODO send {error_msg: "..."}
+            }
+        } else if (req.target().compare("/api/v1/topics") == 0) {
+            if (req.method() == http::verb::post) {
+                json topic_json = json::parse(req.body());       // TODO error checking
+                int id = m_db.create_topic(topic_json);
+                json id_json = {{"id", id}};
+                auto resp = build_json_response(req, id_json);
+                return send(std::move(resp));
+            } else if (req.method() == http::verb::get) {
+                json topics_json = {{"topics", m_db.get_topics()}};
+                auto resp = build_json_response(req, topics_json);
+                return send(std::move(resp));
+            } else {
+                return send(bad_request("Invalid HTTP-method"));
+            }
+        } 
     }
 
     ////

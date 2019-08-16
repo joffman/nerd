@@ -1,11 +1,16 @@
-- Function for deleting cards.
-- Hide answers first.
-- Use uniform response format: { success: 1|0, error_message: "...",
-data|id|card|...: {...}}
-- Input validation: No unnecessary fields in json.
+- Topics page:
+ . add new topic (input + button)
+ . update topic (click into td)
+ . Click on topic for list of cards.
+- Add topic field to card-form.
+- Store topic in card-list and use it as default for new card.
 
-- Group cards into topics.
 - Check and store correctness of answer.
+- Use uniform response format: { success: 1|0, error_message: "...",
+	data|id|card|...: {...}}
+- Hide answers first.
+- Build abstract interface for CRUD operations (DRY)
+- Input validation: No unnecessary fields in json.
 
 - Error handling: Don't crash on invalid input.
 - const member functions.

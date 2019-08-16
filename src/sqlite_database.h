@@ -56,6 +56,11 @@ public:
     // Create database. Throw on error.
     void init();
 
+
+    //////////////////////////////
+    // card CRUD
+    //////////////////////////////
+
     // Returns id of newly created card.
     // Throws if object can't be created.
     int create_card(const json& data);
@@ -72,6 +77,24 @@ public:
 
     // Delete card with given id.
     void delete_card(int id);
+
+
+    //////////////////////////////
+    // topic CRUD
+    //////////////////////////////
+
+    // Returns id of newly created topic.
+    // Throws if object can't be created.
+    int create_topic(const json& data);
+
+    // Return all topics from database.
+    json get_topics() const;
+    
+    // Update topic with given id.
+    void update_topic(int id, const json& data);
+
+    // Delete topic with given id.
+    void delete_topic(int id);
 
 private:
     sqlite3* m_db;
