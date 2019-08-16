@@ -70,6 +70,9 @@ public:
     // Update card with given id.
     void update_card(int id, const json& data);
 
+    // Delete card with given id.
+    void delete_card(int id);
+
 private:
     sqlite3* m_db;
 };

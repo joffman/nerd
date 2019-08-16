@@ -241,8 +241,19 @@ void HttpServer::handle_request(
             }
             auto resp = build_json_response(req, resp_json);
             return send(std::move(resp));
+        } else if (req.method() == http::verb::delete_) {   // delete card
+            json resp_json;
+            try {
+                m_db.delete_card(card_id);
+                resp_json["success"] = true;
+            } catch (const std::exception& e) {
+                resp_json["success"] = false;
+                resp_json["error_msg"] = e.what();
+            }
+            auto resp = build_json_response(req, resp_json);
+            return send(std::move(resp));   // TODO Create api_success and api_error functions
         } else {
-            return send(bad_request("Invalid HTTP-method"));
+            return send(bad_request("Invalid HTTP-method"));    // TODO send {error_msg: "..."}
         }
     } else if (req.target().compare("/api/v1/cards") == 0) {
         if (req.method() == http::verb::post) {

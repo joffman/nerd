@@ -149,7 +149,7 @@ int SQLiteDatabase::create_card(const json& data)
 
     // Execute statement and return last-insert id.
     if (stmt.step() != SQLITE_DONE)
-        throw std::runtime_error(std::string("can't create user: ") + sqlite3_errmsg(m_db));
+        throw std::runtime_error(std::string("can't create card: ") + sqlite3_errmsg(m_db));
 
     return sqlite3_last_insert_rowid(m_db);
 }
@@ -242,7 +242,21 @@ void SQLiteDatabase::update_card(int id, const json& data)
 
     // Execute statement.
     if (stmt.step() != SQLITE_DONE)
-        throw std::runtime_error(std::string("can't update user: ") + sqlite3_errmsg(m_db));
+        throw std::runtime_error(std::string("can't update card: ") + sqlite3_errmsg(m_db));
+}
+
+void SQLiteDatabase::delete_card(int id)
+{
+    // Create SQL-statement.
+    SQLiteStatement stmt(
+        m_db,
+        R"RAW(DELETE FROM card WHERE id = $1;)RAW");
+
+    stmt.bind_int(1, id);
+
+    // Execute statement.
+    if (stmt.step() != SQLITE_DONE)
+        throw std::runtime_error(std::string("can't delete card: ") + sqlite3_errmsg(m_db));
 }
 
 }   // nerd
