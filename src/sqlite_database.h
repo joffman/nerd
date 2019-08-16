@@ -67,6 +67,9 @@ public:
     // Return all details from card with given id.
     json get_card(int id) const;
 
+    // Update card with given id.
+    void update_card(int id, const json& data);
+
 private:
     sqlite3* m_db;
 };

@@ -56,15 +56,15 @@ http::response<http::string_body> HttpServer::build_json_response(
     const json& response_json)
 {
     std::string body = response_json.dump();
-    http::response<http::string_body> res(
+    http::response<http::string_body> resp(
         http::status::ok,
         req.version(),
         body);
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, "application/json");
-    res.content_length(body.size());
-    res.keep_alive(req.keep_alive());
-    return std::move(res);
+    resp.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    resp.set(http::field::content_type, "application/json");
+    resp.content_length(body.size());
+    resp.keep_alive(req.keep_alive());
+    return std::move(resp);
 }
 
 beast::string_view HttpServer::mime_type(beast::string_view path)
@@ -184,37 +184,37 @@ void HttpServer::handle_request(
     auto const bad_request =
         [&req](beast::string_view why)
         {
-            http::response<http::string_body> res{http::status::bad_request, req.version()};
-            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-            res.set(http::field::content_type, "text/html");
-            res.keep_alive(req.keep_alive());
-            res.body() = std::string(why);
-            res.prepare_payload();
-            return res;
+            http::response<http::string_body> resp{http::status::bad_request, req.version()};
+            resp.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+            resp.set(http::field::content_type, "text/html");
+            resp.keep_alive(req.keep_alive());
+            resp.body() = std::string(why);
+            resp.prepare_payload();
+            return resp;
         };
 
     // Returns a not found response
     auto const not_found = [&req](beast::string_view target)
     {
-        http::response<http::string_body> res{http::status::not_found, req.version()};
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, "text/html");
-        res.keep_alive(req.keep_alive());
-        res.body() = "The resource '" + std::string(target) + "' was not found.";
-        res.prepare_payload();
-        return res;
+        http::response<http::string_body> resp{http::status::not_found, req.version()};
+        resp.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        resp.set(http::field::content_type, "text/html");
+        resp.keep_alive(req.keep_alive());
+        resp.body() = "The resource '" + std::string(target) + "' was not found.";
+        resp.prepare_payload();
+        return resp;
     };
 
     // Returns a server error response
     auto const server_error = [&req](beast::string_view what)
     {
-        http::response<http::string_body> res{http::status::internal_server_error, req.version()};
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, "text/html");
-        res.keep_alive(req.keep_alive());
-        res.body() = "An error occurred: '" + std::string(what) + "'";
-        res.prepare_payload();
-        return res;
+        http::response<http::string_body> resp{http::status::internal_server_error, req.version()};
+        resp.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        resp.set(http::field::content_type, "text/html");
+        resp.keep_alive(req.keep_alive());
+        resp.body() = "An error occurred: '" + std::string(what) + "'";
+        resp.prepare_payload();
+        return resp;
     };
 
     ////
@@ -222,14 +222,25 @@ void HttpServer::handle_request(
     ////
     const std::regex cards_regex(R"(/api/v1/cards/(\d+))");
     std::match_results<beast::string_view::const_iterator> matches;
+    // TODO Check Content-type field.
     if (sv_regex_match(req.target(), matches, cards_regex)) {
         int card_id = std::stoi(matches[1]);
-        if (req.method() == http::verb::get) {
+        if (req.method() == http::verb::get) {          // get card
             json card_json = m_db.get_card(card_id);
-            auto res = build_json_response(req, card_json);
-            return send(std::move(res));
-        } else if (req.method() == http::verb::post) {
-            // ...
+            auto resp = build_json_response(req, card_json);
+            return send(std::move(resp));
+        } else if (req.method() == http::verb::put) {   // update card
+            json resp_json;
+            try {
+                json req_json = json::parse(req.body());
+                m_db.update_card(card_id, req_json);
+                resp_json["success"] = true;
+            } catch (const std::exception& e) {
+                resp_json["success"] = false;
+                resp_json["error_msg"] = e.what();
+            }
+            auto resp = build_json_response(req, resp_json);
+            return send(std::move(resp));
         } else {
             return send(bad_request("Invalid HTTP-method"));
         }
@@ -238,12 +249,12 @@ void HttpServer::handle_request(
             json card_json = json::parse(req.body());       // TODO error checking
             int id = m_db.create_card(card_json);
             json id_json = {{"id", id}};
-            auto res = build_json_response(req, id_json);
-            return send(std::move(res));
+            auto resp = build_json_response(req, id_json);
+            return send(std::move(resp));
         } else if (req.method() == http::verb::get) {
             json cards_json = {{"cards", m_db.get_cards()}};
-            auto res = build_json_response(req, cards_json);
-            return send(std::move(res));
+            auto resp = build_json_response(req, cards_json);
+            return send(std::move(resp));
         } else {
             return send(bad_request("Invalid HTTP-method"));
         }
@@ -287,24 +298,24 @@ void HttpServer::handle_request(
 
     // Respond to HEAD request
     if (req.method() == http::verb::head) {
-        http::response<http::empty_body> res{http::status::ok, req.version()};
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, mime_type(path));
-        res.content_length(size);
-        res.keep_alive(req.keep_alive());
-        return send(std::move(res));
+        http::response<http::empty_body> resp{http::status::ok, req.version()};
+        resp.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        resp.set(http::field::content_type, mime_type(path));
+        resp.content_length(size);
+        resp.keep_alive(req.keep_alive());
+        return send(std::move(resp));
     }
 
     // Respond to GET request
-    http::response<http::file_body> res{
+    http::response<http::file_body> resp{
         std::piecewise_construct,
             std::make_tuple(std::move(body)),
             std::make_tuple(http::status::ok, req.version())};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, mime_type(path));
-    res.content_length(size);
-    res.keep_alive(req.keep_alive());
-    return send(std::move(res));
+    resp.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    resp.set(http::field::content_type, mime_type(path));
+    resp.content_length(size);
+    resp.keep_alive(req.keep_alive());
+    return send(std::move(resp));
 }
 
 }   // nerd

@@ -179,7 +179,8 @@ json SQLiteDatabase::get_cards() const
     return result;
 }
 
-json SQLiteDatabase::get_card(int id) const {
+json SQLiteDatabase::get_card(int id) const
+{
     // Create SQL-statement.
     SQLiteStatement stmt(
         m_db,
@@ -214,6 +215,34 @@ json SQLiteDatabase::get_card(int id) const {
         throw std::logic_error(std::string("internal error when fetching card"));
 
     return result;
+}
+
+void SQLiteDatabase::update_card(int id, const json& data)
+{
+    // Check pre-condition. TODO Check for correct type.
+    if (data.find("title") == data.end()
+        || data.find("question") == data.end())
+        throw std::runtime_error("create_card: title or question missing");
+
+    // Create SQL-statement.
+    SQLiteStatement stmt(
+        m_db,
+        R"RAW(UPDATE card
+                SET title = $1, question = $2, answer = $3
+                WHERE id = $4;
+            )RAW");
+
+    stmt.bind_text(1, data["title"]);
+    stmt.bind_text(2, data["question"]);
+    if (data.find("answer") != data.end())
+        stmt.bind_text(3, data["answer"]);
+    else
+        stmt.bind_null(3);
+    stmt.bind_int(4, id);
+
+    // Execute statement.
+    if (stmt.step() != SQLITE_DONE)
+        throw std::runtime_error(std::string("can't update user: ") + sqlite3_errmsg(m_db));
 }
 
 }   // nerd
