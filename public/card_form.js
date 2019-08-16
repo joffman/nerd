@@ -12,8 +12,37 @@ var card_form = function() {
 				</form>
 			</div>`);
 
+	var update_card = function(id, data) {
+		$.ajax({
+			url: "/api/v1/cards/" + id,
+			type: "PUT",
+			data: JSON.stringify(data),
+			contentType: "application/json",	// what we send to the server
+			dataType: "json",					// what we expect from the server
+			error: function(resp_data, status, xhr) {
+				alert("Update failed: " + resp_data.error_msg);
+			},
+			success: function(resp_data, status, xhr) {
+				console.log("resp_data: ", resp_data);
+				console.log("status: ", status);
+				console.log("xhr: ", xhr);
+				alert("Update succeeded! ");
+				window.location.href = "index.html";
+			}
+		});
+	};
+
+	var create_card = function(data) {
+		$.post("/api/v1/cards", JSON.stringify(data), function(resp_data, status, xhr) {
+			console.log("resp_data: ", resp_data);
+			console.log("status: ", status);
+			console.log("xhr: ", xhr);
+			window.location.href = "index.html";
+		});
+	};
+
 	$("#contents").on("click", "#card-form button.submit", function(evt) {
-		console.log("submit button pressed");
+		console.log("save button pressed");
 
 		// Get current data from form.
 		var form = $("#card-form")[0];
@@ -25,13 +54,13 @@ var card_form = function() {
 		}
 		console.log("data: ", data);
 
-		// Send POST request to create card.
-		$.post("/api/v1/cards", JSON.stringify(data), function(resp_data, status, xhr) {
-			console.log("resp_data: ", resp_data);
-			console.log("status: ", status);
-			console.log("xhr: ", xhr);
-			window.location.href = "index.html";
-		});
+		if ("id" in data) {
+			var id = data.id;
+			delete data.id;
+			update_card(id, data);
+		} else {
+			create_card(data);
+		}
 
 		// Prevent default event handling.
 		return false;
