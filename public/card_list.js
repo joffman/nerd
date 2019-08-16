@@ -17,11 +17,13 @@ var card_list = function() {
 					.append('<tr><td class="id-td">' + card.id + "</td><td>" + card.title + "</td></tr>");
 			});
 			$("#contents").on("click", "#cards-table tr", function() {
-				var id = $(this).find("td.id-td")[0].innerText;
-				$.get("/api/v1/cards/" + id, function(data) {
-					card_form.set_data(data);
-					$("#contents").html(card_form.html());
-				});
+				if ($(this).find("td").length > 0) {	// ignore clicks on header
+					var id = $(this).find("td.id-td")[0].innerText;
+					$.get("/api/v1/cards/" + id, function(data) {
+						card_form.set_data(data);
+						$("#contents").html(card_form.html());
+					});
+				}
 			});
 		});
 	};
