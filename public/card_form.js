@@ -37,7 +37,7 @@ var card_form = function() {
 			console.log("resp_data: ", resp_data);
 			console.log("status: ", status);
 			console.log("xhr: ", xhr);
-			window.location.href = "index.html";
+			window.location.href = "index.html";	// TODO a complete refresh should be unnecessary
 		});
 	};
 

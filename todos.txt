@@ -1,9 +1,8 @@
-- Add put function for updating existing card.
-- Input validation: No unnecessary fields in json.
 - Function for deleting cards.
 - Hide answers first.
 - Use uniform response format: { success: 1|0, error_message: "...",
 data|id|card|...: {...}}
+- Input validation: No unnecessary fields in json.
 
 - Group cards into topics.
 - Check and store correctness of answer.
