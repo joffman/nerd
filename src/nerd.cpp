@@ -42,8 +42,7 @@ int main(int argc, char* argv[])
         // Check command line arguments.
         if (argc == 2 && std::string(argv[1]) == "create_database") {
             SQLiteDatabase db{"nerdbase.db"};
-            if (!db.init())
-                throw std::runtime_error("initializing database failed");
+            db.init();
             return 0;
         } else if (argc == 4) {
             auto const address = net::ip::make_address(argv[1]);

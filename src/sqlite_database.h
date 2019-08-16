@@ -53,8 +53,8 @@ public:
 
     ~SQLiteDatabase();
 
-    // Return true on success.
-    bool init();
+    // Create database. Throw on error.
+    void init();
 
     // Returns id of newly created card.
     // Throws if object can't be created.

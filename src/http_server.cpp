@@ -270,7 +270,6 @@ void HttpServer::handle_request(
             return send(bad_request("Invalid HTTP-method"));
         }
     }
-    // More API calls here ...
 
     ////
     // Handle static files.

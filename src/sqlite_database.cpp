@@ -24,7 +24,7 @@ SQLiteStatement::SQLiteStatement(sqlite3* db, const std::string& stmt_str)
         nullptr);
     if (rc != SQLITE_OK)
         throw std::runtime_error(
-            std::string("preparing SQL statment failed: ") + sqlite3_errmsg(m_db));
+            std::string("preparing SQL statement failed: ") + sqlite3_errmsg(m_db));
 }
 
 SQLiteStatement::~SQLiteStatement()
@@ -67,6 +67,7 @@ void SQLiteStatement::bind_text(int pos, const std::string& text)
 
     if (rc != SQLITE_OK)
         throw std::runtime_error(std::string("bind_text failed: ") + sqlite3_errmsg(m_db));
+    // TODO Don't use exception. Use std::optional instead as return value.
 }
 
 //////////////////////////////
@@ -97,7 +98,12 @@ SQLiteDatabase::SQLiteDatabase(const char* filename)
     int rc = sqlite3_open(filename, &m_db);
     if (rc != SQLITE_OK)
         throw std::runtime_error(
-            std::string("can't open database: ") + sqlite3_errmsg(m_db));
+            std::string("cannot open database: ") + sqlite3_errmsg(m_db));
+
+    SQLiteStatement stmt(m_db, R"RAW(PRAGMA foreign_keys = ON;)RAW");
+    if (stmt.step() != SQLITE_DONE)
+        throw std::runtime_error(
+            std::string("cannot set foreign_keys pragma: ") + sqlite3_errmsg(m_db));
 }
 
 SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& other)
@@ -109,21 +115,42 @@ SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& other)
 SQLiteDatabase::~SQLiteDatabase()
 {
     if (sqlite3_close(m_db))
-        throw std::runtime_error(std::string("can't close database: ")
+        throw std::runtime_error(std::string("cannot close database: ")
                                  + sqlite3_errmsg(m_db));
 }
 
-bool SQLiteDatabase::init()
+void SQLiteDatabase::init()
 {
-    SQLiteStatement stmt(
-        m_db,
-        R"RAW(CREATE TABLE IF NOT EXISTS card (
+    const std::vector<std::string> raw_stmts = {
+        R"RAW(
+           CREATE TABLE IF NOT EXISTS topic (
+                id          INTEGER UNIQUE PRIMARY KEY  NOT NULL,
+                name        TEXT                        NOT NULL
+            );
+        )RAW",
+        R"RAW(
+            INSERT INTO topic (id, name) VALUES (0, "Default");
+        )RAW",
+        R"RAW(
+            CREATE TABLE IF NOT EXISTS card (
                 id          INTEGER UNIQUE PRIMARY KEY  NOT NULL,
                 title       TEXT                        NOT NULL,
                 question    TEXT                        NOT NULL,
-                answer      TEXT
-            ))RAW");
-        return stmt.step() == SQLITE_DONE;
+                answer      TEXT                                ,
+                topic       INTEGER REFERENCES topic ON UPDATE CASCADE ON DELETE SET DEFAULT DEFAULT 0
+            );
+        )RAW",
+        R"RAW(
+            CREATE INDEX topicindex ON card(topic);
+                -- see: https://www.sqlite.org/foreignkeys.html
+        )RAW"};
+
+    for (const auto& raw : raw_stmts) {
+        SQLiteStatement stmt(m_db, raw);
+        if (stmt.step() != SQLITE_DONE)
+            throw std::runtime_error(std::string("error during initialization: ")
+                                     + sqlite3_errmsg(m_db));
+    }
 }
 
 int SQLiteDatabase::create_card(const json& data)
@@ -136,8 +163,8 @@ int SQLiteDatabase::create_card(const json& data)
     SQLiteStatement stmt(
         m_db,
         R"RAW(INSERT INTO card
-                (title, question, answer)
-                VALUES ($1, $2, $3);
+                (title, question, answer, topic)
+                VALUES ($1, $2, $3, $4);
             )RAW");
 
     stmt.bind_text(1, data["title"]);
@@ -146,10 +173,14 @@ int SQLiteDatabase::create_card(const json& data)
         stmt.bind_text(3, data["answer"]);
     else
         stmt.bind_null(3);
+    if (data.find("topic") != data.end())
+        stmt.bind_int(4, data["topic"]);
+    else
+        stmt.bind_int(4, 0);    // set default topic
 
     // Execute statement and return last-insert id.
     if (stmt.step() != SQLITE_DONE)
-        throw std::runtime_error(std::string("can't create card: ") + sqlite3_errmsg(m_db));
+        throw std::runtime_error(std::string("cannot create card: ") + sqlite3_errmsg(m_db));
 
     return sqlite3_last_insert_rowid(m_db);
 }
@@ -184,7 +215,7 @@ json SQLiteDatabase::get_card(int id) const
     // Create SQL-statement.
     SQLiteStatement stmt(
         m_db,
-        R"RAW(SELECT id, title, question, answer
+        R"RAW(SELECT id, title, question, answer, topic
                 from card
                 WHERE id = $1;)RAW");
     stmt.bind_int(1, id);
@@ -208,6 +239,7 @@ json SQLiteDatabase::get_card(int id) const
     } catch (const SQLiteColumnNull&) {
         // answer is NULL
     }
+    result["topic"] = stmt.column_int(4);
 
     // Check for errors.
     int rc = stmt.step();
@@ -228,8 +260,8 @@ void SQLiteDatabase::update_card(int id, const json& data)
     SQLiteStatement stmt(
         m_db,
         R"RAW(UPDATE card
-                SET title = $1, question = $2, answer = $3
-                WHERE id = $4;
+                SET title = $1, question = $2, answer = $3, topic = $4
+                WHERE id = $5;
             )RAW");
 
     stmt.bind_text(1, data["title"]);
@@ -238,11 +270,15 @@ void SQLiteDatabase::update_card(int id, const json& data)
         stmt.bind_text(3, data["answer"]);
     else
         stmt.bind_null(3);
-    stmt.bind_int(4, id);
+    if (data.find("topic") != data.end())
+        stmt.bind_int(4, data["topic"]);
+    else
+        stmt.bind_int(4, 0);    // set default topic
+    stmt.bind_int(5, id);
 
     // Execute statement.
     if (stmt.step() != SQLITE_DONE)
-        throw std::runtime_error(std::string("can't update card: ") + sqlite3_errmsg(m_db));
+        throw std::runtime_error(std::string("cannot update card: ") + sqlite3_errmsg(m_db));
 }
 
 void SQLiteDatabase::delete_card(int id)
@@ -256,7 +292,7 @@ void SQLiteDatabase::delete_card(int id)
 
     // Execute statement.
     if (stmt.step() != SQLITE_DONE)
-        throw std::runtime_error(std::string("can't delete card: ") + sqlite3_errmsg(m_db));
+        throw std::runtime_error(std::string("cannot delete card: ") + sqlite3_errmsg(m_db));
 }
 
 }   // nerd
