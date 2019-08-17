@@ -5,7 +5,6 @@ API v1: /api/v1/...
 ## Cards API.
 ################################################################################
 
-
 ##############################
 ## Create new card.
 ##############################
@@ -27,10 +26,10 @@ Response (example):
 
 
 ##############################
-## Get all cards.
+## Get all cards of given topic.
 ##############################
 
-Request line: GET .../cards
+Request line (example): GET .../cards?topic_id=7
 
 Response (example):
 {
@@ -80,6 +79,71 @@ Response (example):
 ##############################
 
 Request line: DELETE .../cards/<id>
+
+Response (example):
+{
+	"success": false
+}
+
+
+################################################################################
+## Topics API.
+################################################################################
+
+##############################
+## Create new topic.
+##############################
+
+Request line: POST .../topics
+
+Request body (example):
+{
+	"name": "My Topic"
+}
+
+Response (example):
+{
+	"id": 5
+}
+
+
+##############################
+## Get all topics.
+##############################
+
+Request line (example): GET .../topics
+
+Response (example):
+{
+	"topics": [
+		{ "id": 1, "name": "First topic" },
+		{ "id": 2, "name": "Second topic" }
+	]
+}
+
+
+##############################
+## Update a topic.
+##############################
+
+Request line: PUT .../topics/<id>
+
+Request body (example):
+{
+	"name": "Changed name"
+}
+
+Response (example):
+{
+	"success": true
+}
+
+
+##############################
+## Delete a topic.
+##############################
+
+Request line: DELETE .../topics/<id>
 
 Response (example):
 {

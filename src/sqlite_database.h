@@ -65,9 +65,8 @@ public:
     // Throws if object can't be created.
     int create_card(const json& data);
 
-    // Return all cards from database.
-    // TODO Allow filters.
-    json get_cards() const;
+    // Return cards of given topic from database.
+    json get_cards(int topic_id=0) const;
     
     // Return all details from card with given id.
     json get_card(int id) const;

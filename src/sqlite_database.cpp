@@ -191,12 +191,13 @@ int SQLiteDatabase::create_card(const json& data)
     return sqlite3_last_insert_rowid(m_db);
 }
 
-json SQLiteDatabase::get_cards() const
+json SQLiteDatabase::get_cards(int topic_id) const
 {
     // Create SQL-statement.
     SQLiteStatement stmt(
         m_db,
-        R"RAW(SELECT id, title from card;)RAW");
+        R"RAW(SELECT id, title from card WHERE topic = $1;)RAW");
+    stmt.bind_int(1, topic_id);
 
     // Fetch results.
     json result = json::array();

@@ -1,4 +1,9 @@
 var card_form = function() {
+
+	//////////////////////////////////////////////////
+	// DOM manipulation
+	//////////////////////////////////////////////////
+
 	var $html_elem = $(`
 			<div>
 				<h1>Card Form</h1>
@@ -7,10 +12,16 @@ var card_form = function() {
 					<div>Title:</div><input type="text" name="title"/>
 					<div>Question:</div><textarea name="question"/>
 					<div>Answer:</div><textarea name="answer"/>
+					<div>Topic-ID:</div><input type="text" name="topic"/>
 
 					<div class="button-bar"><button class="submit">Save</button><!--More buttons here--></div>
 				</form>
 			</div>`);
+
+
+	//////////////////////////////////////////////////
+	// CRUD operations
+	//////////////////////////////////////////////////
 
 	var update_card = function(id, data) {
 		$.ajax({
@@ -41,6 +52,11 @@ var card_form = function() {
 		});
 	};
 
+
+	//////////////////////////////////////////////////
+	// Event handler
+	//////////////////////////////////////////////////
+
 	$("#contents").on("click", "#card-form button.submit", function(evt) {
 		console.log("save button pressed");
 
@@ -52,6 +68,7 @@ var card_form = function() {
 			if (input.name && input.value != "")
 				data[input.name] = input.value;
 		}
+		data.topic = parseInt(data.topic);
 		console.log("data: ", data);
 
 		if ("id" in data) {
@@ -66,11 +83,17 @@ var card_form = function() {
 		return false;
 	});
 
+
+	//////////////////////////////////////////////////
+	// Public interface
+	//////////////////////////////////////////////////
+
 	var set_data = function(data) {
 		$html_elem.find('input[name="id"]').attr("value", data["id"]);
 		$html_elem.find('input[name="title"]').attr("value", data["title"]);
 		$html_elem.find('textarea[name="question"]').text(data["question"]);
 		$html_elem.find('textarea[name="answer"]').text(data["answer"]);
+		$html_elem.find('input[name="topic"]').attr("value", data["topic"]);
 	};
 
 	var html = function() {

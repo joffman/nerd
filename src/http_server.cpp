@@ -217,13 +217,17 @@ void HttpServer::handle_request(
         return resp;
     };
 
+    // API TODO:
+    // - Check Content-type field.
+    // - Send error response instead of just throwing.
+    // - Create api_success and api_error functions for uniform responses.
+    // - Error checking for json parsing.
     ////
-    // Handle API calls.
+    // Card API
     ////
-    {   // Card API.
+    {
         const std::regex regex(R"(/api/v1/cards/(\d+))");
         std::match_results<beast::string_view::const_iterator> matches;
-        // TODO Check Content-type field.
         if (sv_regex_match(req.target(), matches, regex)) {
             int card_id = std::stoi(matches[1]);
             if (req.method() == http::verb::get) {          // get card
@@ -252,30 +256,45 @@ void HttpServer::handle_request(
                     resp_json["error_msg"] = e.what();
                 }
                 auto resp = build_json_response(req, resp_json);
-                return send(std::move(resp));   // TODO Create api_success and api_error functions
+                return send(std::move(resp));
             } else {
-                return send(bad_request("Invalid HTTP-method"));    // TODO send {error_msg: "..."}
+                return send(bad_request("Invalid HTTP-method"));
             }
-        } else if (req.target().compare("/api/v1/cards") == 0) {
+        }
+    }
+    {
+        const std::regex regex(R"(/api/v1/cards\?topic_id=(\d+))");
+        std::match_results<beast::string_view::const_iterator> matches;
+        if (sv_regex_match(req.target(), matches, regex)) {
+            int topic_id = std::stoi(matches[1]);
+            if (req.method() == http::verb::get) {
+                json cards_json = {{"cards", m_db.get_cards(topic_id)}};
+                auto resp = build_json_response(req, cards_json);
+                return send(std::move(resp));
+            } else {
+                return send(bad_request("Invalid HTTP-method"));
+            }
+        }
+    }
+    {
+        if (req.target().compare("/api/v1/cards") == 0) {
             if (req.method() == http::verb::post) {
-                json card_json = json::parse(req.body());       // TODO error checking
+                json card_json = json::parse(req.body());
                 int id = m_db.create_card(card_json);
                 json id_json = {{"id", id}};
                 auto resp = build_json_response(req, id_json);
-                return send(std::move(resp));
-            } else if (req.method() == http::verb::get) {
-                json cards_json = {{"cards", m_db.get_cards()}};
-                auto resp = build_json_response(req, cards_json);
                 return send(std::move(resp));
             } else {
                 return send(bad_request("Invalid HTTP-method"));
             }
         } 
     }
-    {   // Topic API.
+    ////
+    // Topic API
+    ////
+    {
         const std::regex regex(R"(/api/v1/topics/(\d+))");
         std::match_results<beast::string_view::const_iterator> matches;
-        // TODO Check Content-type field.
         if (sv_regex_match(req.target(), matches, regex)) {
             int topic_id = std::stoi(matches[1]);
             if (req.method() == http::verb::put) {   // update topic
@@ -300,13 +319,16 @@ void HttpServer::handle_request(
                     resp_json["error_msg"] = e.what();
                 }
                 auto resp = build_json_response(req, resp_json);
-                return send(std::move(resp));   // TODO Create api_success and api_error functions
+                return send(std::move(resp));
             } else {
-                return send(bad_request("Invalid HTTP-method"));    // TODO send {error_msg: "..."}
+                return send(bad_request("Invalid HTTP-method"));
             }
-        } else if (req.target().compare("/api/v1/topics") == 0) {
+        }
+    }
+    {
+        if (req.target().compare("/api/v1/topics") == 0) {
             if (req.method() == http::verb::post) {
-                json topic_json = json::parse(req.body());       // TODO error checking
+                json topic_json = json::parse(req.body());
                 int id = m_db.create_topic(topic_json);
                 json id_json = {{"id", id}};
                 auto resp = build_json_response(req, id_json);
