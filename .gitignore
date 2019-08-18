@@ -1,4 +1,6 @@
 *.swp
+hardcopy.*
 /obj
 /nerd
 /nerdbase.db
+/src/tags

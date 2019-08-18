@@ -8,14 +8,14 @@ INCDIR = $(SRCDIR)
 	# headers in the source folder
 
 # Object files.
-_OBJ = http_server.o nerd.o sqlite_database.o
+_OBJ = http_server.o nerd.o sqlite_database.o sqlite_statement.o sqlite_table.o
 OBJ = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
 
 
 # Include files.
 _EXTINC = json.hpp
 EXTINC = $(patsubst %,$(EXTINCDIR)/%,$(_EXTINC))
-_INC = http_server.h names.h sqlite_database.h
+_INC = http_server.h names.h sqlite_database.h sqlite_statement.h sqlite_table.h
 INC = $(patsubst %,$(INCDIR)/%,$(_INC))
 
 # Compile options

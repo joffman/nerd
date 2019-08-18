@@ -12,6 +12,7 @@
 
 #include "http_server.h"
 #include "names.h"
+#include "sqlite_table.h"
 
 namespace {
 
@@ -231,14 +232,16 @@ void HttpServer::handle_request(
         if (sv_regex_match(req.target(), matches, regex)) {
             int card_id = std::stoi(matches[1]);
             if (req.method() == http::verb::get) {          // get card
-                json card_json = m_db.get_card(card_id);
+                CardSQLiteTable table(m_db.data());
+                json card_json = table.get_one(card_id);
                 auto resp = build_json_response(req, card_json);
                 return send(std::move(resp));
             } else if (req.method() == http::verb::put) {   // update card
                 json resp_json;
                 try {
                     json req_json = json::parse(req.body());
-                    m_db.update_card(card_id, req_json);
+                    CardSQLiteTable table(m_db.data());
+                    table.update(card_id, req_json);
                     resp_json["success"] = true;
                 } catch (const std::exception& e) {
                     resp_json["success"] = false;
@@ -249,7 +252,8 @@ void HttpServer::handle_request(
             } else if (req.method() == http::verb::delete_) {   // delete card
                 json resp_json;
                 try {
-                    m_db.delete_card(card_id);
+                    CardSQLiteTable table(m_db.data());
+                    table.remove(card_id);
                     resp_json["success"] = true;
                 } catch (const std::exception& e) {
                     resp_json["success"] = false;
@@ -268,7 +272,11 @@ void HttpServer::handle_request(
         if (sv_regex_match(req.target(), matches, regex)) {
             int topic_id = std::stoi(matches[1]);
             if (req.method() == http::verb::get) {
-                json cards_json = {{"cards", m_db.get_cards(topic_id)}};
+                CardSQLiteTable table(m_db.data());
+                std::unordered_map<std::string, std::string> filter = {
+                    {"topic", std::to_string(topic_id)}
+                };
+                json cards_json = {{"cards", table.get(filter)}};
                 auto resp = build_json_response(req, cards_json);
                 return send(std::move(resp));
             } else {
@@ -280,7 +288,8 @@ void HttpServer::handle_request(
         if (req.target().compare("/api/v1/cards") == 0) {
             if (req.method() == http::verb::post) {
                 json card_json = json::parse(req.body());
-                int id = m_db.create_card(card_json);
+                CardSQLiteTable table(m_db.data());
+                int id = table.insert(card_json);
                 json id_json = {{"id", id}};
                 auto resp = build_json_response(req, id_json);
                 return send(std::move(resp));
@@ -301,7 +310,8 @@ void HttpServer::handle_request(
                 json resp_json;
                 try {
                     json req_json = json::parse(req.body());
-                    m_db.update_topic(topic_id, req_json);
+                    TopicSQLiteTable table(m_db.data());
+                    table.update(topic_id, req_json);
                     resp_json["success"] = true;
                 } catch (const std::exception& e) {
                     resp_json["success"] = false;
@@ -312,7 +322,8 @@ void HttpServer::handle_request(
             } else if (req.method() == http::verb::delete_) {   // delete topic
                 json resp_json;
                 try {
-                    m_db.delete_topic(topic_id);
+                    TopicSQLiteTable table(m_db.data());
+                    table.remove(topic_id);
                     resp_json["success"] = true;
                 } catch (const std::exception& e) {
                     resp_json["success"] = false;
@@ -329,12 +340,14 @@ void HttpServer::handle_request(
         if (req.target().compare("/api/v1/topics") == 0) {
             if (req.method() == http::verb::post) {
                 json topic_json = json::parse(req.body());
-                int id = m_db.create_topic(topic_json);
+                TopicSQLiteTable table(m_db.data());
+                int id = table.insert(topic_json);
                 json id_json = {{"id", id}};
                 auto resp = build_json_response(req, id_json);
                 return send(std::move(resp));
             } else if (req.method() == http::verb::get) {
-                json topics_json = {{"topics", m_db.get_topics()}};
+                TopicSQLiteTable table(m_db.data());
+                json topics_json = {{"topics", table.get()}};
                 auto resp = build_json_response(req, topics_json);
                 return send(std::move(resp));
             } else {
